@@ -1,0 +1,30 @@
+const mongoose = require("mongoose");
+
+const UserSchema = new mongoose.Schema({
+    googleId: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    name: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    role: {
+        type: String,
+        enum: ["student", "admin", "vendor"],
+        default: "student",
+    },
+    assignedVendor: {
+        type: String,
+        enum: ["The Craving Brew", "GSR", "Uniworld"],
+        required: true,
+    },
+});
+
+module.exports = mongoose.model("User", UserSchema);
