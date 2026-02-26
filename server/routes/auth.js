@@ -3,11 +3,9 @@ const router = express.Router();
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 
-// Initialize the Google Client
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Allowed college email domain
-const ALLOWED_DOMAIN = "sst.scaler.com";
+const COLLEGE_DOMAIN = "sst.scaler.com";
 
 router.post("/google", async (req, res) => {
     try {
@@ -19,34 +17,56 @@ router.post("/google", async (req, res) => {
             audience: process.env.GOOGLE_CLIENT_ID,
         });
         const payload = ticket.getPayload();
-
         const { sub: googleId, email, name, picture } = payload;
 
-        // 2. Check if email belongs to the college
-        const emailDomain = email.split("@")[1];
-        if (emailDomain !== ALLOWED_DOMAIN) {
-            return res.status(403).json({
-                message: `Access Denied: Only @${ALLOWED_DOMAIN} emails are allowed.`,
-            });
-        }
-
-        // 3. Check if user exists in our DB
+        // 2. Check if user exists — by googleId first, then by email (for invited users)
         let user = await User.findOne({ googleId });
 
         if (!user) {
-            // 4. If not, create a new user
-            user = new User({
-                googleId,
-                name,
-                email,
-                picture,
-                assignedVendor: "The Craving Brew", // Default. Can be changed by admin later.
-                role: "student",
-            });
-            await user.save();
+            // Check if they were INVITED (pre-registered by admin with a placeholder googleId)
+            user = await User.findOne({ email });
+
+            if (user) {
+                // Invited user logging in for the first time! Update their record.
+                user.googleId = googleId;
+                user.name = name; // Replace placeholder name with real Google name
+                await user.save();
+            }
         }
 
-        // 5. Send success response
+        if (user) {
+            // EXISTING or INVITED user → Allow login
+            return res.status(200).json({
+                message: "Login Successful",
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    assignedVendor: user.assignedVendor,
+                    picture: picture,
+                },
+            });
+        }
+
+        // 3. NEW USER → Only allow college emails to self-register
+        const emailDomain = email.split("@")[1];
+        if (emailDomain !== COLLEGE_DOMAIN) {
+            return res.status(403).json({
+                message: `Access Denied. Only @${COLLEGE_DOMAIN} students can self-register. If you're a vendor or admin, ask an existing admin to invite you.`,
+            });
+        }
+
+        // 4. Create new student
+        user = new User({
+            googleId,
+            name,
+            email,
+            assignedVendor: "The Craving Brew", // Default
+            role: "student",
+        });
+        await user.save();
+
         res.status(200).json({
             message: "Login Successful",
             user: {
@@ -55,7 +75,7 @@ router.post("/google", async (req, res) => {
                 email: user.email,
                 role: user.role,
                 assignedVendor: user.assignedVendor,
-                picture: picture, // Always send latest picture from Google
+                picture: picture,
             },
         });
     } catch (error) {

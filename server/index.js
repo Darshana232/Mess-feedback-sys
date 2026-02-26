@@ -7,6 +7,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const feedbackRoutes = require("./routes/feedback");
 const adminRoutes = require("./routes/admin");
+const vendorRoutes = require("./routes/vendor");
 
 // Middleware to parse JSON & Allow Frontend to talk to Backend
 app.use(express.json());
@@ -16,6 +17,7 @@ app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5175", "http:
 app.use("/api/auth", authRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/vendor", vendorRoutes);
 
 // 1. Connect to MongoDB
 mongoose

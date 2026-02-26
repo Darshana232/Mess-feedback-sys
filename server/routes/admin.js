@@ -149,4 +149,52 @@ router.put("/update-user", checkAdmin, async (req, res) => {
     }
 });
 
+// ============================================
+// POST /api/admin/invite-user
+// Pre-register an email so non-college users can log in
+// Admin provides: email, role, assignedVendor
+// A placeholder user is created (googleId filled on first login)
+// ============================================
+router.post("/invite-user", checkAdmin, async (req, res) => {
+    try {
+        const { email, role, assignedVendor } = req.body;
+
+        if (!email || !role || !assignedVendor) {
+            return res.status(400).json({ message: "Email, role, and vendor are required" });
+        }
+
+        if (!["student", "admin", "vendor"].includes(role)) {
+            return res.status(400).json({ message: "Invalid role" });
+        }
+
+        if (!["The Craving Brew", "GSR", "Uniworld"].includes(assignedVendor)) {
+            return res.status(400).json({ message: "Invalid vendor" });
+        }
+
+        // Check if already exists
+        const existing = await User.findOne({ email });
+        if (existing) {
+            return res.status(400).json({ message: "This email is already registered" });
+        }
+
+        // Create a placeholder user (googleId will be filled on first login)
+        const newUser = new User({
+            googleId: "pending_" + Date.now(), // Temporary placeholder
+            name: email.split("@")[0], // Use email prefix as name until they log in
+            email,
+            role,
+            assignedVendor,
+        });
+        await newUser.save();
+
+        res.status(201).json({
+            message: `Invited ${email} as ${role}!`,
+            user: newUser,
+        });
+    } catch (error) {
+        console.error("Invite Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
 module.exports = router;
