@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 const FeedbackForm = ({ user }) => {
-    const [mealType, setMealType] = useState("Lunch"); // Default to Lunch
+    const [mealType, setMealType] = useState("Breakfast");
     const [ratings, setRatings] = useState({
         quality: 0,
         hygiene: 0,
@@ -12,24 +12,38 @@ const FeedbackForm = ({ user }) => {
     const [suggestion, setSuggestion] = useState("");
     const [hasRated, setHasRated] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [currentMenu, setCurrentMenu] = useState(null);
 
-    // Check if already rated when Meal Type changes
+    // Check if already rated and fetch menu when Meal Type changes
     useEffect(() => {
         if (!user) return;
 
-        const checkStatus = async () => {
+        const checkStatusAndMenu = async () => {
             try {
-                const response = await fetch(
+                // 1. Check if rated
+                const statusRes = await fetch(
                     `http://localhost:5001/api/feedback/status?userId=${user._id}&mealType=${mealType}`
                 );
-                const data = await response.json();
-                setHasRated(data.hasRated);
+                const statusData = await statusRes.json();
+                setHasRated(statusData.hasRated);
+
+                // 2. Fetch today's menu for this vendor
+                const dateString = new Date().toISOString().split('T')[0];
+                const menuRes = await fetch(
+                    `http://localhost:5001/api/menu?vendorId=${user.assignedVendor}&date=${dateString}`
+                );
+                const menuData = await menuRes.json();
+
+                // Find the specific menu for the selected mealType
+                const mealMenu = menuData.menus?.find(m => m.mealType === mealType);
+                setCurrentMenu(mealMenu || null);
+
             } catch (error) {
-                console.error("Error checking status:", error);
+                console.error("Error fetching data:", error);
             }
         };
 
-        checkStatus();
+        checkStatusAndMenu();
     }, [mealType, user]);
 
     const handleRatingChange = (category, value) => {
@@ -82,15 +96,52 @@ const FeedbackForm = ({ user }) => {
 
     return (
         <div className="feedback-form">
-            <h3>Rate Your Meal 🍲</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3>Rate Your Meal 🍲</h3>
+                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                    {user.assignedVendor}
+                </span>
+            </div>
 
             <div className="form-group">
                 <label>Select Meal:</label>
                 <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
                     <option value="Breakfast">Breakfast</option>
                     <option value="Lunch">Lunch</option>
+                    <option value="Snacks">Snacks</option>
                     <option value="Dinner">Dinner</option>
                 </select>
+            </div>
+
+            {/* Menu Display Section */}
+            <div style={{
+                background: "var(--bg)",
+                padding: "16px",
+                borderRadius: "var(--radius-sm)",
+                marginBottom: "8px",
+                border: "1px solid var(--border)"
+            }}>
+                <h4 style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                    Today's {mealType} Menu
+                </h4>
+                {currentMenu ? (
+                    <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                        {currentMenu.imageUrl && (
+                            <img
+                                src={`http://localhost:5001${currentMenu.imageUrl}`}
+                                alt={`${mealType} Menu`}
+                                style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px" }}
+                            />
+                        )}
+                        <p style={{ fontSize: "0.95rem", lineHeight: "1.5", margin: 0 }}>
+                            {currentMenu.items}
+                        </p>
+                    </div>
+                ) : (
+                    <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+                        Menu not uploaded yet.
+                    </p>
+                )}
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -118,9 +169,11 @@ const FeedbackForm = ({ user }) => {
                     />
                 </div>
 
-                <button type="submit" disabled={loading}>
-                    {loading ? "Submitting..." : "Submit Feedback 🚀"}
-                </button>
+                <div style={{ marginTop: "16px" }}>
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                        {loading ? "Submitting..." : "Submit Feedback 🚀"}
+                    </button>
+                </div>
             </form>
         </div>
     );

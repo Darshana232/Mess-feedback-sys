@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import MenuManager from "./MenuManager";
 
 const AdminDashboard = ({ user }) => {
     const [activeTab, setActiveTab] = useState("overview");
@@ -12,6 +13,9 @@ const AdminDashboard = ({ user }) => {
     const [inviteRole, setInviteRole] = useState("vendor");
     const [inviteVendor, setInviteVendor] = useState("The Craving Brew");
     const [inviteMsg, setInviteMsg] = useState("");
+
+    // Admin menu management state
+    const [adminMenuVendor, setAdminMenuVendor] = useState("The Craving Brew");
 
     const API = "http://localhost:5001/api/admin";
 
@@ -111,6 +115,7 @@ const AdminDashboard = ({ user }) => {
                 <button className={`tab-btn ${activeTab === "overview" ? "active" : ""}`} onClick={() => setActiveTab("overview")}>Overview</button>
                 <button className={`tab-btn ${activeTab === "suggestions" ? "active" : ""}`} onClick={() => setActiveTab("suggestions")}>Suggestions</button>
                 <button className={`tab-btn ${activeTab === "users" ? "active" : ""}`} onClick={() => setActiveTab("users")}>Users</button>
+                <button className={`tab-btn ${activeTab === "menu" ? "active" : ""}`} onClick={() => setActiveTab("menu")}>Daily Menu</button>
             </div>
 
             {/* Overview Tab */}
@@ -210,6 +215,21 @@ const AdminDashboard = ({ user }) => {
                             </select>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Menu Tab */}
+            {activeTab === "menu" && (
+                <div>
+                    <div style={{ marginBottom: "16px", padding: "16px", background: "var(--bg)", borderRadius: "var(--radius-sm)" }}>
+                        <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)", marginRight: "8px" }}>Select Vendor to Manage:</label>
+                        <select value={adminMenuVendor} onChange={(e) => setAdminMenuVendor(e.target.value)} style={{ width: "auto" }}>
+                            <option value="The Craving Brew">The Craving Brew</option>
+                            <option value="GSR">GSR</option>
+                            <option value="Uniworld">Uniworld</option>
+                        </select>
+                    </div>
+                    <MenuManager user={user} adminSelectedVendor={adminMenuVendor} />
                 </div>
             )}
         </div>

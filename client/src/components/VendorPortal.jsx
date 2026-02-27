@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import MenuManager from "./MenuManager";
 
 const VendorPortal = ({ user }) => {
     const [activeTab, setActiveTab] = useState("scores");
@@ -42,6 +43,7 @@ const VendorPortal = ({ user }) => {
             <div className="tab-bar">
                 <button className={`tab-btn ${activeTab === "scores" ? "active" : ""}`} onClick={() => setActiveTab("scores")}>Scores</button>
                 <button className={`tab-btn ${activeTab === "suggestions" ? "active" : ""}`} onClick={() => setActiveTab("suggestions")}>Suggestions</button>
+                <button className={`tab-btn ${activeTab === "menu" ? "active" : ""}`} onClick={() => setActiveTab("menu")}>Daily Menu</button>
             </div>
 
             {/* Scores Tab */}
@@ -90,6 +92,11 @@ const VendorPortal = ({ user }) => {
                         ))
                     )}
                 </div>
+            )}
+
+            {/* Menu Tab */}
+            {activeTab === "menu" && (
+                <MenuManager user={user} />
             )}
         </div>
     );

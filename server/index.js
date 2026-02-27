@@ -8,16 +8,22 @@ const authRoutes = require("./routes/auth");
 const feedbackRoutes = require("./routes/feedback");
 const adminRoutes = require("./routes/admin");
 const vendorRoutes = require("./routes/vendor");
+const menuRoutes = require("./routes/menu"); // NEW
 
 // Middleware to parse JSON & Allow Frontend to talk to Backend
 app.use(express.json());
 app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5175", "http://localhost:5174"] }));
+
+// Serve the 'uploads' folder statically so images can be loaded by the frontend
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/vendor", vendorRoutes);
+app.use("/api/menu", menuRoutes); // NEW
 
 // 1. Connect to MongoDB
 mongoose
