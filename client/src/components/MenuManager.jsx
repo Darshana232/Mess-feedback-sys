@@ -1,164 +1,174 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { CalendarDays, Upload } from 'lucide-react'
+
+const MEAL_ICONS = { Breakfast: '🌅', Lunch: '☀️', Snacks: '🍿', Dinner: '🌙' }
+const MEAL_GRADS = {
+    Breakfast: 'from-amber-100 to-yellow-50',
+    Lunch: 'from-orange-100 to-rose-50',
+    Snacks: 'from-pink-100 to-fuchsia-50',
+    Dinner: 'from-indigo-100 to-purple-50',
+}
 
 const MenuManager = ({ user, adminSelectedVendor = null }) => {
-    // If user is vendor, use their assigned vendor. If admin, use the selected one from the dropdown.
-    const vendorToManage = user.role === "vendor" ? user.assignedVendor : adminSelectedVendor;
+    const vendorToManage = user.role === 'vendor' ? user.assignedVendor : adminSelectedVendor
 
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
-    const [menus, setMenus] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [menus, setMenus] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [mealType, setMealType] = useState('Breakfast')
+    const [items, setItems] = useState('')
+    const [image, setImage] = useState(null)
+    const [imageName, setImageName] = useState('')
+    const [statusMsg, setStatusMsg] = useState('')
+    const [statusOk, setStatusOk] = useState(true)
 
-    // Form states
-    const [mealType, setMealType] = useState("Breakfast");
-    const [items, setItems] = useState("");
-    const [image, setImage] = useState(null);
-    const [statusMsg, setStatusMsg] = useState("");
+    const API = 'http://localhost:5001/api/menu'
 
-    const API = "http://localhost:5001/api/menu";
-
-    useEffect(() => {
-        if (vendorToManage) {
-            fetchMenus();
-        }
-    }, [date, vendorToManage]);
+    useEffect(() => { if (vendorToManage) fetchMenus() }, [date, vendorToManage])
 
     const fetchMenus = async () => {
-        setLoading(true);
+        setLoading(true)
         try {
-            const res = await fetch(`${API}?vendorId=${vendorToManage}&date=${date}`);
-            const data = await res.json();
-            setMenus(data.menus || []);
-        } catch (error) {
-            console.error("Fetch Menus Error:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSaveMenu = async (e) => {
-        e.preventDefault();
-        setStatusMsg("Saving...");
-
-        // We MUST use FormData when sending files
-        const formData = new FormData();
-        formData.append("userId", user._id); // Needed for auth
-        formData.append("vendorId", vendorToManage);
-        formData.append("date", date);
-        formData.append("mealType", mealType);
-        formData.append("items", items);
-        if (image) {
-            formData.append("image", image);
-        }
-
-        try {
-            const res = await fetch(API, {
-                method: "POST",
-                body: formData, // Notice: No Content-Type header! Browser sets it automatically with boundary string for FormData
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                setStatusMsg("Menu saved successfully! ✅");
-                setItems("");
-                setImage(null);
-                e.target.reset(); // clear file input
-                fetchMenus(); // refresh list
-            } else {
-                setStatusMsg(data.message || "Failed to save");
-            }
-        } catch (error) {
-            console.error("Save Menu Error:", error);
-            setStatusMsg("Server Error");
-        }
-    };
-
-    // Helper to find today's menu for a specific meal
-    const getMenuForMeal = (meal) => menus.find(m => m.mealType === meal);
-
-    if (!vendorToManage) {
-        return <div className="empty-state">Please select a vendor to manage their menu.</div>;
+            const res = await fetch(`${API}?vendorId=${vendorToManage}&date=${date}`)
+            const data = await res.json()
+            setMenus(data.menus || [])
+        } catch (e) { console.error(e) }
+        finally { setLoading(false) }
     }
 
+    const handleSave = async (e) => {
+        e.preventDefault()
+        setStatusMsg('Saving…')
+        const fd = new FormData()
+        fd.append('userId', user._id)
+        fd.append('vendorId', vendorToManage)
+        fd.append('date', date)
+        fd.append('mealType', mealType)
+        fd.append('items', items)
+        if (image) fd.append('image', image)
+
+        try {
+            const res = await fetch(API, { method: 'POST', body: fd })
+            const data = await res.json()
+            if (res.ok) {
+                setStatusMsg('Menu saved! ✅'); setStatusOk(true)
+                setItems(''); setImage(null); setImageName('')
+                e.target.reset(); fetchMenus()
+            } else {
+                setStatusMsg(data.message || 'Failed'); setStatusOk(false)
+            }
+        } catch { setStatusMsg('Server Error'); setStatusOk(false) }
+    }
+
+    if (!vendorToManage) return (
+        <div className="glass-card p-16 text-center text-gray-400"><div className="text-4xl mb-3">🍽️</div>Select a vendor to manage their menu.</div>
+    )
+
     return (
-        <div className="menu-manager">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <h3 className="section-title">Manage Menu for {vendorToManage}</h3>
-                <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    style={{ width: "auto", padding: "6px 12px" }}
-                />
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                    <ChefHatIcon /> Menu for <span className="text-purple-600">{vendorToManage}</span>
+                </h3>
+                <div className="flex items-center gap-2 bg-white border border-purple-100 rounded-full px-4 py-2">
+                    <CalendarDays className="w-4 h-4 text-purple-400" />
+                    <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                        className="bg-transparent text-sm text-gray-700 outline-none" />
+                </div>
             </div>
 
             {/* Upload Form */}
-            <div className="card" style={{ marginBottom: "24px", padding: "20px", background: "var(--bg)", boxShadow: "none" }}>
-                <form onSubmit={handleSaveMenu} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)" }}>Meal Type</label>
-                            <select value={mealType} onChange={(e) => setMealType(e.target.value)} required>
-                                <option value="Breakfast">Breakfast</option>
-                                <option value="Lunch">Lunch</option>
-                                <option value="Snacks">Snacks</option>
-                                <option value="Dinner">Dinner</option>
-                            </select>
-                        </div>
-                        <div style={{ flex: 2 }}>
-                            <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)" }}>Menu Items (comma separated)</label>
-                            <input
-                                type="text"
-                                placeholder="e.g., Dal, Rice, Paneer, Roti"
-                                value={items}
-                                onChange={(e) => setItems(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>
-                            Menu Image (Optional)
-                        </label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setImage(e.target.files[0])}
-                            style={{ padding: "8px", background: "white", borderRadius: "8px", width: "100%", border: "1px solid var(--border)" }}
-                        />
-                    </div>
-                    <button type="submit" className="btn-primary" style={{ marginTop: "8px" }}>Save Menu</button>
-                    {statusMsg && <div style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--accent)", marginTop: "8px", fontWeight: "600" }}>{statusMsg}</div>}
-                </form>
-            </div>
+            <form onSubmit={handleSave} className="glass-card p-6 space-y-4">
+                <h4 className="font-semibold text-gray-700 text-sm">Upload / Update Menu</h4>
 
-            {/* Preview Section */}
-            <h3 className="section-title">Menu Preview for {new Date(date).toLocaleDateString()}</h3>
-            {loading ? <div className="loading">Loading...</div> : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {["Breakfast", "Lunch", "Snacks", "Dinner"].map(meal => {
-                        const menu = getMenuForMeal(meal);
-                        if (!menu) return null;
-                        return (
-                            <div key={meal} style={{ padding: "16px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", display: "flex", gap: "16px" }}>
-                                {menu.imageUrl && (
-                                    <img
-                                        src={`http://localhost:5001${menu.imageUrl}`}
-                                        alt={`${meal} Menu`}
-                                        style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px" }}
-                                    />
-                                )}
-                                <div>
-                                    <h4 style={{ color: "var(--text)", marginBottom: "4px", fontSize: "1rem" }}>{meal}</h4>
-                                    <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: "1.4" }}>{menu.items}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                    {menus.length === 0 && <div className="empty-state">No menus uploaded for this date.</div>}
+                {/* Meal type tabs */}
+                <div className="flex flex-wrap gap-2">
+                    {['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(m => (
+                        <button type="button" key={m} onClick={() => setMealType(m)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border
+                ${mealType === m ? 'bg-grad-primary text-white border-transparent shadow-btn' : 'bg-white border-purple-100 text-gray-500 hover:border-purple-300'}`}>
+                            {MEAL_ICONS[m]} {m}
+                        </button>
+                    ))}
                 </div>
-            )}
-        </div>
-    );
-};
 
-export default MenuManager;
+                <input type="text" placeholder="e.g., Dal, Rice, Paneer, Roti" value={items}
+                    onChange={e => setItems(e.target.value)} required className="input-glass" />
+
+                {/* File drop zone */}
+                <label className="relative flex flex-col items-center justify-center border-2 border-dashed border-purple-200 rounded-2xl p-6 cursor-pointer hover:border-purple-400 hover:bg-purple-50/40 transition-all">
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        onChange={e => { const f = e.target.files[0]; if (f) { setImage(f); setImageName(f.name) } }} />
+                    <Upload className="w-6 h-6 text-purple-300 mb-2" />
+                    {imageName ? (
+                        <span className="text-sm text-green-500 font-medium">📎 {imageName}</span>
+                    ) : (
+                        <span className="text-sm text-gray-400">Drop image here or <span className="text-purple-500 font-semibold">browse</span></span>
+                    )}
+                </label>
+
+                <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    className="btn-gradient w-full py-3">
+                    Save Menu 💾
+                </motion.button>
+                {statusMsg && (
+                    <p className={`text-sm text-center font-medium ${statusOk ? 'text-green-500' : 'text-red-400'}`}>{statusMsg}</p>
+                )}
+            </form>
+
+            {/* Preview */}
+            <div>
+                <h4 className="font-semibold text-gray-600 text-sm mb-4">
+                    Preview — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </h4>
+                {loading ? (
+                    <div className="flex items-center justify-center gap-3 py-10 text-gray-400">
+                        <svg className="animate-spin w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                        </svg> Loading…
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(meal => {
+                            const menu = menus.find(m => m.mealType === meal)
+                            if (!menu) return null
+                            return (
+                                <motion.div key={meal} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                                    whileHover={{ y: -3, boxShadow: '0 12px 40px rgba(139,92,246,0.2)' }}
+                                    className={`glass-card-sm p-4 bg-gradient-to-br ${MEAL_GRADS[meal]} flex gap-3 items-start`}>
+                                    {menu.imageUrl ? (
+                                        <img src={`http://localhost:5001${menu.imageUrl}`} alt={meal}
+                                            className="w-20 h-20 rounded-xl object-cover flex-shrink-0 shadow-sm" />
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl bg-white/60 flex items-center justify-center text-3xl flex-shrink-0">{MEAL_ICONS[meal]}</div>
+                                    )}
+                                    <div>
+                                        <div className="text-xs font-bold text-purple-500 uppercase tracking-wide mb-1">{meal}</div>
+                                        <div className="text-sm text-gray-600 leading-relaxed">{menu.items}</div>
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
+                        {menus.length === 0 && (
+                            <div className="glass-card col-span-2 p-12 text-center text-gray-400">
+                                <div className="text-4xl mb-3">📋</div>No menus uploaded for this date.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// inline ChefHat placeholder icon
+const ChefHatIcon = () => (
+    <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6a4 4 0 014 4 4 4 0 01-4 4 4 4 0 01-4-4 4 4 0 014-4zm0 0V3m0 11v7" />
+    </svg>
+)
+
+export default MenuManager
