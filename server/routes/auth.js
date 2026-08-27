@@ -5,7 +5,8 @@ const User = require("../models/User");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const COLLEGE_DOMAIN = "sst.scaler.com";
+const COLLEGE_DOMAIN = process.env.COLLEGE_DOMAIN || "sst.scaler.com";
+const DEFAULT_VENDOR = process.env.DEFAULT_VENDOR || "The Craving Brew";
 
 router.post("/google", async (req, res) => {
     try {
@@ -62,7 +63,7 @@ router.post("/google", async (req, res) => {
             googleId,
             name,
             email,
-            assignedVendor: "The Craving Brew", // Default
+            assignedVendor: DEFAULT_VENDOR,
             role: "student",
         });
         await user.save();

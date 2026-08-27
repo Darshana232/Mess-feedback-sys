@@ -12,7 +12,17 @@ const menuRoutes = require("./routes/menu"); // NEW
 
 // Middleware to parse JSON & Allow Frontend to talk to Backend
 app.use(express.json());
-app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5175", "http://localhost:5174"] }));
+
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : ["http://localhost:5173", "http://localhost:5175", "http://localhost:5174"];
+
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Serve the 'uploads' folder statically so images can be loaded by the frontend
 const path = require("path");
@@ -24,6 +34,22 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/vendor", vendorRoutes);
 app.use("/api/menu", menuRoutes); // NEW
+
+// Global Error Handler Middleware - Must be defined AFTER all routes
+app.use((error, req, res, next) => {
+    console.error("Global Error Handler:", error);
+
+    // Default error response
+    const status = error.status || error.statusCode || 500;
+    const message = error.message || "An unexpected error occurred";
+    const errorCode = error.errorCode || "INTERNAL_SERVER_ERROR";
+
+    res.status(status).json({
+        status: "error",
+        message: message,
+        errorCode: errorCode
+    });
+});
 
 // 1. Connect to MongoDB
 mongoose

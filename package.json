@@ -1,0 +1,41 @@
+{
+  "name": "messmate",
+  "version": "1.0.0",
+  "description": "College mess feedback and rating system with full-stack application",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" --names server,client --prefix name",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "cd server && npm install",
+    "build:client": "cd client && npm install && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "lint": "cd client && npm run lint",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "seed": "cd server && node seed.js"
+  },
+  "keywords": [
+    "mess",
+    "feedback",
+    "rating",
+    "college",
+    "food",
+    "vendor"
+  ],
+  "author": "Darshana",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

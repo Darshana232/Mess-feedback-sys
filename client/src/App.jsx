@@ -15,6 +15,7 @@ const ROLE_COLORS = {
 
 function App() {
   const [user, setUser] = useState(null)
+  const [loginError, setLoginError] = useState('')
 
   const handleLoginSuccess = async (credentialResponse) => {
     try {
@@ -24,10 +25,16 @@ function App() {
         body: JSON.stringify({ token: credentialResponse.credential }),
       })
       const data = await response.json()
-      if (response.ok) setUser(data.user)
-      else alert(data.message)
+      if (response.ok) {
+        setUser(data.user)
+        setLoginError('')
+      } else {
+        console.error('Login error:', data.message || data.error)
+        setLoginError(data.message || 'Login failed. Please try again.')
+      }
     } catch (err) {
       console.error('Login Failed:', err)
+      setLoginError('An error occurred during login. Please try again.')
     }
   }
 

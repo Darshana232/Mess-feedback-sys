@@ -78,7 +78,7 @@ const FeedbackFlow = ({ user }) => {
                     userId: user._id,
                     vendorId: user.assignedVendor,
                     mealType,
-                    ratings: { ...ratings, quantity: ratings.quality }, // map quality to quantity too
+                    ratings: { ...ratings },
                     suggestion: comment,
                 }),
             })
@@ -87,10 +87,10 @@ const FeedbackFlow = ({ user }) => {
                 setDir(1)
                 setStep(4)
             } else {
-                alert('Error: ' + data.message)
+                console.error('Feedback submission error:', data.message || data.error)
             }
         } catch (e) {
-            alert('Failed to submit feedback.')
+            console.error('Failed to submit feedback:', e)
         } finally {
             setLoading(false)
         }

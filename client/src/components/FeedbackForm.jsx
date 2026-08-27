@@ -22,6 +22,7 @@ const FeedbackForm = ({ user }) => {
     const [hasRated, setHasRated] = useState(false);
     const [loading, setLoading] = useState(false);
     const [currentMenu, setCurrentMenu] = useState(null);
+    const [submitError, setSubmitError] = useState("");
 
     useEffect(() => {
         if (!user) return;
@@ -56,6 +57,7 @@ const FeedbackForm = ({ user }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setSubmitError("");
 
         try {
             const response = await fetch("http://localhost:5001/api/feedback/submit", {
@@ -75,11 +77,12 @@ const FeedbackForm = ({ user }) => {
             if (response.ok) {
                 setHasRated(true);
             } else {
-                alert("Error: " + data.message);
+                console.error("Feedback submission error:", data.message || data.error);
+                setSubmitError(data.message || "Failed to submit feedback. Please try again.");
             }
         } catch (error) {
             console.error("Submit Error:", error);
-            alert("Failed to submit.");
+            setSubmitError("Failed to submit feedback. Please check your connection and try again.");
         } finally {
             setLoading(false);
         }
@@ -212,6 +215,11 @@ const FeedbackForm = ({ user }) => {
                         >
                             {loading ? "Submitting..." : "Submit Feedback 🚀"}
                         </button>
+                        {submitError && (
+                            <p style={{ textAlign: "center", fontSize: "0.8rem", color: "#ef4444", marginTop: "8px" }}>
+                                {submitError}
+                            </p>
+                        )}
                         {Object.values(ratings).some((r) => r === 0) && (
                             <p style={{ textAlign: "center", fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "8px" }}>
                                 Please rate all categories

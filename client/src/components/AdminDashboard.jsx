@@ -36,6 +36,7 @@ const AdminDashboard = ({ user }) => {
     const [suggestions, setSuggestions] = useState([])
     const [users, setUsers] = useState([])
     const [loading, setLoading] = useState(true)
+    const [roleChangeError, setRoleChangeError] = useState('')
 
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviteRole, setInviteRole] = useState('vendor')
@@ -72,8 +73,18 @@ const AdminDashboard = ({ user }) => {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetUserId, newRole }),
             })
-            if (res.ok) fetchData(); else { const d = await res.json(); alert(d.message) }
-        } catch (e) { console.error(e) }
+            if (res.ok) {
+                setRoleChangeError('')
+                fetchData()
+            } else {
+                const d = await res.json()
+                console.error('Role change error:', d.message)
+                setRoleChangeError(d.message || 'Failed to update user role')
+            }
+        } catch (e) {
+            console.error('Role change failed:', e)
+            setRoleChangeError('Failed to update user role')
+        }
     }
 
     const handleInvite = async (e) => {

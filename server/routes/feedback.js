@@ -54,7 +54,27 @@ router.post("/submit", async (req, res) => {
     try {
         const { userId, vendorId, mealType, ratings, suggestion } = req.body;
 
-        // 1. Double Check: Did they already rate? (Backend validation is crucial!)
+        // 1. Validate rating values are integers between 1-5
+        const requiredRatingKeys = ['quality', 'taste', 'hygiene', 'overall', 'quantity'];
+        for (const key of requiredRatingKeys) {
+            if (ratings[key] === undefined || ratings[key] === null) {
+                return res.status(400).json({
+                    status: "error",
+                    message: `Rating field '${key}' is required`,
+                    errorCode: "MISSING_RATING_FIELD"
+                });
+            }
+            const value = parseInt(ratings[key]);
+            if (!Number.isInteger(value) || value < 1 || value > 5) {
+                return res.status(400).json({
+                    status: "error",
+                    message: `Rating '${key}' must be an integer between 1 and 5, received: ${ratings[key]}`,
+                    errorCode: "INVALID_RATING_VALUE"
+                });
+            }
+        }
+
+        // 2. Double Check: Did they already rate? (Backend validation is crucial!)
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date();
@@ -67,10 +87,14 @@ router.post("/submit", async (req, res) => {
         });
 
         if (existing) {
-            return res.status(400).json({ message: "You have already rated this meal today!" });
+            return res.status(400).json({
+                status: "error",
+                message: "You have already rated this meal today!",
+                errorCode: "DUPLICATE_RATING"
+            });
         }
 
-        // 2. Create the Feedback
+        // 3. Create the Feedback
         const newFeedback = new Feedback({
             userId,
             vendorId,
@@ -82,11 +106,18 @@ router.post("/submit", async (req, res) => {
 
         await newFeedback.save();
 
-        res.status(201).json({ message: "Feedback submitted successfully! 🌟" });
+        res.status(201).json({
+            status: "success",
+            message: "Feedback submitted successfully! 🌟"
+        });
 
     } catch (error) {
         console.error("Submit Error:", error);
-        res.status(500).json({ message: "Failed to submit feedback" });
+        res.status(500).json({
+            status: "error",
+            message: "Failed to submit feedback",
+            errorCode: "SUBMISSION_ERROR"
+        });
     }
 });
 

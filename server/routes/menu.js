@@ -24,9 +24,20 @@ const storage = multer.diskStorage({
     }
 });
 
+// File filter to validate only image files are uploaded
+const fileFilter = (req, file, cb) => {
+    // Only allow image MIME types
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Invalid file type. Only image files are allowed. Received: ${file.mimetype}`), false);
+    }
+};
+
 const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: fileFilter
 });
 
 // Middleware: Check if user is Admin or Vendor
@@ -77,12 +88,25 @@ router.get("/", async (req, res) => {
 // Uses multer for 'image' field
 // ============================================
 router.post("/", upload.single("image"), checkAdminOrVendor, async (req, res) => {
+    // Handle multer file validation errors
+    if (req.fileValidationError) {
+        return res.status(400).json({
+            status: "error",
+            message: req.fileValidationError,
+            errorCode: "FILE_VALIDATION_ERROR"
+        });
+    }
+
     try {
         const { vendorId, date, mealType, items } = req.body;
 
         // If the user is a vendor, they can only upload to their own vendorId
         if (req.authorizedUser.role === "vendor" && req.authorizedUser.assignedVendor !== vendorId) {
-            return res.status(403).json({ message: "You can only update your own Menu" });
+            return res.status(403).json({
+                status: "error",
+                message: "You can only update your own Menu",
+                errorCode: "UNAUTHORIZED_VENDOR"
+            });
         }
 
         const menuDate = new Date(date);
@@ -103,11 +127,37 @@ router.post("/", upload.single("image"), checkAdminOrVendor, async (req, res) =>
             { new: true, upsert: true } // Return new doc, create if missing
         );
 
-        res.json({ message: "Menu saved successfully!", menu });
+        res.json({
+            status: "success",
+            message: "Menu saved successfully!",
+            menu
+        });
     } catch (error) {
         console.error("Menu POST Error:", error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(500).json({
+            status: "error",
+            message: "Server Error",
+            errorCode: "MENU_SAVE_ERROR"
+        });
     }
+}, (error, req, res, next) => {
+    // Multer error handler middleware
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'FILE_TOO_LARGE') {
+            return res.status(400).json({
+                status: "error",
+                message: "File size exceeds 5MB limit",
+                errorCode: "FILE_TOO_LARGE"
+            });
+        }
+    } else if (error) {
+        return res.status(400).json({
+            status: "error",
+            message: error.message || "File upload validation failed",
+            errorCode: "FILE_VALIDATION_ERROR"
+        });
+    }
+    next(error);
 });
 
 module.exports = router;

@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
+
 const MEALS = [
     { id: 'Breakfast', emoji: '🌅', time: '7:00 – 9:00 AM', grad: 'from-amber-100 to-yellow-50', border: 'border-amber-200', ring: 'ring-amber-400' },
     { id: 'Lunch', emoji: '☀️', time: '12:00 – 2:00 PM', grad: 'from-orange-100 to-peach-50', border: 'border-orange-200', ring: 'ring-orange-400' },
@@ -53,7 +55,7 @@ const MealSelectStep = ({ mealType, setMealType, currentMenu, onNext, onBack }) 
                     className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex gap-3 items-start"
                 >
                     {currentMenu.imageUrl && (
-                        <img src={`http://localhost:5001${currentMenu.imageUrl}`} alt="menu"
+                        <img src={`${API_URL}${currentMenu.imageUrl}`} alt="menu"
                             className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
                     )}
                     <div>

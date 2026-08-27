@@ -1,24 +1,65 @@
-# Dependencies
-node_modules/
-
 # Environment variables (SENSITIVE! Never push these!)
 .env
+.env.local
+.env.*.local
+.env.production
+.env.development
 
-# Build output
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
 dist/
 build/
-
-# OS files
-.DS_Store
-Thumbs.db
+.next/
+out/
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
 
-# Logs
-*.log
-npm-debug.log*
+# Testing
+coverage/
+.nyc_output/
+.jest-cache/
 
-# User Uploads
+# Runtime
+uploads/
 server/uploads/
+logs/
+*.log
+
+# Process management
+.pm2/
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# OS
+Thumbs.db
+.DS_Store
+ehthumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+.cache/
+.claude/
